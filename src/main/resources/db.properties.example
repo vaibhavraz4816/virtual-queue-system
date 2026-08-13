@@ -1,0 +1,7 @@
+# Edit these to match your local MySQL setup, then re-run `mvn package`.
+# The database itself is created by running database/schema.sql first.
+
+db.driver=com.mysql.cj.jdbc.Driver
+db.url=jdbc:mysql://localhost:3306/virtual_queue_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+db.username=root
+db.password=your_mysql_password
