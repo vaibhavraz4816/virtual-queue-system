@@ -182,3 +182,5 @@ http://localhost:8080/virtual-queue-system/
 
 > Built two polling JSON REST endpoints consumed by vanilla JS on the
 > front end for live queue updates, without any client-side framework.
+
+Built by vaibhav as professional project
