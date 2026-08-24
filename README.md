@@ -183,4 +183,11 @@ http://localhost:8080/virtual-queue-system/
 > Built two polling JSON REST endpoints consumed by vanilla JS on the
 > front end for live queue updates, without any client-side framework.
 
-Built by vaibhav as professional project
+## About the Developer
+
+Built by **Vaibhav**, MCA (Vellore Institute of Technology). This project also underpins an academic dissertation on reinforcement-learning-based adaptive fitness training.
+
+Feel free to connect:
+
+[![LinkedIn](https://www.linkedin.com/in/vaibhav-singh-b7363a211/)](#)
+
