@@ -37,23 +37,51 @@ public class ShopPublicController {
 
     @GetMapping("/{slug}/queue")
     public String shopQueuePage(@PathVariable("slug") String slug,
-                                @CookieValue(value = "q_tokens", required = false) String cookieTokens,
+                                @CookieValue(value = "queue_access_token", required = false) String cookieToken,
+                                @CookieValue(value = "q_tokens", required = false) String legacyCookieTokens,
+                                jakarta.servlet.http.HttpServletResponse servletResponse,
                                 Model model,
                                 HttpSession session) {
         Shop shop = shopService.getShopBySlug(slug);
         DashboardStatsDto stats = queueService.getDashboardStats(shop.getId());
 
+        // Always expire/clean up legacy broken q_tokens cookie if sent by browser
+        if (legacyCookieTokens != null) {
+            jakarta.servlet.http.Cookie deleteLegacy = new jakarta.servlet.http.Cookie("q_tokens", "");
+            deleteLegacy.setPath("/");
+            deleteLegacy.setMaxAge(0);
+            servletResponse.addCookie(deleteLegacy);
+        }
+
         CustomerQueueStatusDto existingTicket = null;
-        if (cookieTokens != null && !cookieTokens.isBlank()) {
-            List<String> tokens = Arrays.asList(cookieTokens.split(","));
-            List<CustomerQueueStatusDto> myQueues = queueService.getMyQueuesStatus(tokens);
-            for (CustomerQueueStatusDto q : myQueues) {
-                if (slug.equalsIgnoreCase(q.getShopSlug()) && !"SERVED".equalsIgnoreCase(q.getStatus())
-                        && !"CANCELLED".equalsIgnoreCase(q.getStatus()) && !"SKIPPED".equalsIgnoreCase(q.getStatus())) {
-                    existingTicket = q;
-                    break;
+
+        // 1. Check single active token cookie
+        if (cookieToken != null && !cookieToken.isBlank()) {
+            try {
+                CustomerQueueStatusDto status = queueService.getCustomerQueueStatus(cookieToken.trim());
+                if (slug.equalsIgnoreCase(status.getShopSlug()) && isQueueActive(status.getStatus())) {
+                    existingTicket = status;
                 }
+            } catch (Exception ignored) {
+                // Token may be for another shop, expired, or invalid
             }
+        }
+
+        // 2. Fallback check legacy tokens safely without writing them back
+        if (existingTicket == null && legacyCookieTokens != null && !legacyCookieTokens.isBlank()) {
+            try {
+                List<String> tokens = Arrays.stream(legacyCookieTokens.split(","))
+                        .map(String::trim)
+                        .filter(t -> !t.isEmpty())
+                        .toList();
+                List<CustomerQueueStatusDto> myQueues = queueService.getMyQueuesStatus(tokens);
+                for (CustomerQueueStatusDto q : myQueues) {
+                    if (slug.equalsIgnoreCase(q.getShopSlug()) && isQueueActive(q.getStatus())) {
+                        existingTicket = q;
+                        break;
+                    }
+                }
+            } catch (Exception ignored) {}
         }
 
         model.addAttribute("shop", shop);
@@ -83,33 +111,32 @@ public class ShopPublicController {
         try {
             QueueEntry entry = queueService.joinQueue(slug, request, session.getId());
 
-            // Sync cookie
-            String existingCookie = null;
-            if (servletRequest.getCookies() != null) {
-                for (jakarta.servlet.http.Cookie c : servletRequest.getCookies()) {
-                    if ("q_tokens".equals(c.getName())) {
-                        existingCookie = c.getValue();
-                        break;
-                    }
-                }
-            }
-            java.util.Set<String> tokenSet = new java.util.LinkedHashSet<>();
-            tokenSet.add(entry.getGuestAccessToken());
-            if (existingCookie != null && !existingCookie.isBlank()) {
-                for (String t : existingCookie.split(",")) {
-                    if (!t.isBlank()) tokenSet.add(t.trim());
-                }
-            }
-            jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("q_tokens", String.join(",", tokenSet));
-            cookie.setPath("/");
-            cookie.setMaxAge(7 * 24 * 3600);
-            cookie.setHttpOnly(false);
-            servletResponse.addCookie(cookie);
+            // 1. Expire legacy broken q_tokens cookie if present
+            jakarta.servlet.http.Cookie clearLegacy = new jakarta.servlet.http.Cookie("q_tokens", "");
+            clearLegacy.setPath("/");
+            clearLegacy.setMaxAge(0);
+            servletResponse.addCookie(clearLegacy);
 
+            // 2. Set single, cookie-safe, URL-safe queue_access_token (NO commas, NO lists)
+            jakarta.servlet.http.Cookie accessCookie = new jakarta.servlet.http.Cookie("queue_access_token", entry.getGuestAccessToken());
+            accessCookie.setPath("/");
+            accessCookie.setMaxAge(7 * 24 * 3600);
+            accessCookie.setHttpOnly(false);
+            servletResponse.addCookie(accessCookie);
+
+            // 3. Customer is redirected directly to /my-queue
             return "redirect:/my-queue?token=" + entry.getGuestAccessToken();
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/shop/" + slug + "/queue";
         }
+    }
+
+    private boolean isQueueActive(String status) {
+        if (status == null) return false;
+        return !"SERVED".equalsIgnoreCase(status)
+                && !"CANCELLED".equalsIgnoreCase(status)
+                && !"SKIPPED".equalsIgnoreCase(status)
+                && !"EXPIRED".equalsIgnoreCase(status);
     }
 }

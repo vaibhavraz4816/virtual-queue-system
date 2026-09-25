@@ -185,6 +185,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Clean up broken legacy q_tokens cookie if present in browser
+    try {
+        document.cookie = 'q_tokens=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    } catch (e) {}
+
     function copyQueueUrl() {
         const url = window.location.href;
         navigator.clipboard.writeText(url).then(() => {

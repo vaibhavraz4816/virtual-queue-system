@@ -16,6 +16,7 @@ import com.queueease.repository.ShopRepository;
 import com.queueease.service.QueueService;
 import com.queueease.util.DateTimeUtils;
 import com.queueease.util.TokenFormatter;
+import com.queueease.util.TokenGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -88,7 +89,7 @@ public class QueueServiceImpl implements QueueService {
         queueRepository.save(queue);
 
         String token = TokenFormatter.formatToken(nextTokenNum);
-        String guestToken = UUID.randomUUID().toString().replace("-", "");
+        String guestToken = TokenGenerator.generateSecureGuestToken();
 
         QueueEntry entry = new QueueEntry(queue, shop, token, request.getCustomerName().trim(), request.getPhone(), guestToken);
         entry.setSessionId(sessionId);
@@ -111,7 +112,7 @@ public class QueueServiceImpl implements QueueService {
         queueRepository.save(queue);
 
         String token = TokenFormatter.formatToken(nextTokenNum);
-        String guestToken = UUID.randomUUID().toString().replace("-", "");
+        String guestToken = TokenGenerator.generateSecureGuestToken();
 
         QueueEntry entry = new QueueEntry(queue, shop, token, request.getCustomerName().trim(), request.getPhone(), guestToken);
         entry.setStatus(QueueEntryStatus.WAITING);

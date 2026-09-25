@@ -28,31 +28,53 @@ public class CustomerQueueController {
     @GetMapping("/my-queue")
     public String myQueue(
             @RequestParam(value = "token", required = false) String tokenParam,
-            @CookieValue(value = "q_tokens", required = false) String cookieTokens,
+            @CookieValue(value = "queue_access_token", required = false) String cookieToken,
+            @CookieValue(value = "q_tokens", required = false) String legacyTokens,
             HttpServletRequest request,
             HttpServletResponse response,
             Model model) {
 
+        // 1. Expire legacy broken q_tokens cookie if sent by browser
+        if (legacyTokens != null) {
+            Cookie clearLegacy = new Cookie("q_tokens", "");
+            clearLegacy.setPath("/");
+            clearLegacy.setMaxAge(0);
+            response.addCookie(clearLegacy);
+        }
+
+        // 2. Gather tokens for initial SSR render
         Set<String> tokenSet = new LinkedHashSet<>();
         if (tokenParam != null && !tokenParam.isBlank()) {
             tokenSet.add(tokenParam.trim());
         }
-        if (cookieTokens != null && !cookieTokens.isBlank()) {
-            for (String t : cookieTokens.split(",")) {
-                if (!t.isBlank()) {
-                    tokenSet.add(t.trim());
+        if (cookieToken != null && !cookieToken.isBlank()) {
+            tokenSet.add(cookieToken.trim());
+        }
+        if (legacyTokens != null && !legacyTokens.isBlank()) {
+            for (String t : legacyTokens.split(",")) {
+                String trimmed = t.trim();
+                if (!trimmed.isEmpty()) {
+                    tokenSet.add(trimmed);
                 }
             }
         }
 
-        if (!tokenSet.isEmpty()) {
-            Cookie cookie = new Cookie("q_tokens", String.join(",", tokenSet));
-            cookie.setPath("/");
-            cookie.setMaxAge(7 * 24 * 3600);
-            cookie.setHttpOnly(false);
-            response.addCookie(cookie);
+        // 3. Set ONLY a single URL-safe cookie for the active token (NO commas, NO lists)
+        String activeToken = (tokenParam != null && !tokenParam.isBlank())
+                ? tokenParam.trim()
+                : (cookieToken != null && !cookieToken.isBlank()
+                    ? cookieToken.trim()
+                    : (!tokenSet.isEmpty() ? tokenSet.iterator().next() : null));
+
+        if (activeToken != null) {
+            Cookie safeCookie = new Cookie("queue_access_token", activeToken);
+            safeCookie.setPath("/");
+            safeCookie.setMaxAge(7 * 24 * 3600);
+            safeCookie.setHttpOnly(false);
+            response.addCookie(safeCookie);
         }
 
+        // 4. Fetch status for SSR
         List<CustomerQueueStatusDto> activeTickets = new ArrayList<>();
         if (!tokenSet.isEmpty()) {
             activeTickets = queueService.getMyQueuesStatus(new ArrayList<>(tokenSet));

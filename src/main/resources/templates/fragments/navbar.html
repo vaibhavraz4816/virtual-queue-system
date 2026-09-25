@@ -91,7 +91,7 @@
     // Quick indicator for active tickets in browser
     document.addEventListener('DOMContentLoaded', () => {
         try {
-            const raw = localStorage.getItem('qe_my_tokens');
+            const raw = localStorage.getItem('queueease_active_queues') || localStorage.getItem('qe_my_tokens');
             if (raw) {
                 const arr = JSON.parse(raw);
                 if (Array.isArray(arr) && arr.length > 0) {

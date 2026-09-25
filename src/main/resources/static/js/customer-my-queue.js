@@ -21,25 +21,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     let tokenToLeave = null;
 
-    // 1. Synchronize tokens from Server SSR, LocalStorage, and Cookies
+    // 1. Synchronize tokens from Server SSR, LocalStorage (queueease_active_queues), and single safe cookie
     function initTokens() {
+        // Clear broken legacy q_tokens cookie immediately
+        try {
+            document.cookie = 'q_tokens=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        } catch (e) {}
+
         // Server initial tokens
         try {
             if (window.INITIAL_MY_TOKENS) {
                 const parsed = JSON.parse(window.INITIAL_MY_TOKENS);
                 if (Array.isArray(parsed)) {
-                    parsed.forEach(t => { if (t) tokenSet.add(t.trim()); });
+                    parsed.forEach(t => { if (t && typeof t === 'string') tokenSet.add(t.trim()); });
                 }
             }
         } catch (e) {}
 
-        // LocalStorage tokens
+        // LocalStorage: queueease_active_queues (structured customer-side list)
+        try {
+            const activeQueues = localStorage.getItem('queueease_active_queues');
+            if (activeQueues) {
+                const parsed = JSON.parse(activeQueues);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(item => {
+                        const token = typeof item === 'string' ? item : item?.guestAccessToken;
+                        if (token && typeof token === 'string') tokenSet.add(token.trim());
+                    });
+                }
+            }
+        } catch (e) {}
+
+        // LocalStorage: qe_my_tokens (backward compatibility)
         try {
             const localSaved = localStorage.getItem('qe_my_tokens');
             if (localSaved) {
                 const parsed = JSON.parse(localSaved);
                 if (Array.isArray(parsed)) {
-                    parsed.forEach(t => { if (t) tokenSet.add(t.trim()); });
+                    parsed.forEach(t => { if (t && typeof t === 'string') tokenSet.add(t.trim()); });
                 }
             }
         } catch (e) {}
@@ -52,25 +71,53 @@ document.addEventListener('DOMContentLoaded', () => {
             currentSelectedToken = urlToken.trim();
         }
 
+        // Single cookie queue_access_token
+        try {
+            const match = document.cookie.match(/(?:^|;\s*)queue_access_token=([^;]+)/);
+            if (match && match[1]) {
+                const cookieTok = decodeURIComponent(match[1].trim());
+                if (cookieTok && !cookieTok.includes(',')) {
+                    tokenSet.add(cookieTok);
+                    if (!currentSelectedToken) {
+                        currentSelectedToken = cookieTok;
+                    }
+                }
+            }
+        } catch (e) {}
+
         persistTokens();
     }
 
     function persistTokens() {
         const arr = Array.from(tokenSet);
         try {
+            localStorage.setItem('queueease_active_queues', JSON.stringify(arr));
             localStorage.setItem('qe_my_tokens', JSON.stringify(arr));
         } catch (e) {}
-        // Also sync cookie for server rendering
-        document.cookie = `q_tokens=${arr.join(',')}; path=/; max-age=604800; SameSite=Lax`;
+
+        // Ensure legacy broken q_tokens cookie is removed
+        try {
+            document.cookie = 'q_tokens=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        } catch (e) {}
+
+        // Maintain ONLY ONE single safe cookie for the active token (NO commas, NO lists)
+        try {
+            const activeToken = currentSelectedToken || (arr.length > 0 ? arr[0] : null);
+            if (activeToken) {
+                document.cookie = `queue_access_token=${encodeURIComponent(activeToken)}; path=/; max-age=604800; SameSite=Lax`;
+            } else {
+                document.cookie = 'queue_access_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            }
+        } catch (e) {}
     }
 
     function removeToken(token) {
         tokenSet.delete(token);
-        persistTokens();
         ticketDataMap.delete(token);
         if (currentSelectedToken === token) {
             currentSelectedToken = tokenSet.size > 0 ? Array.from(tokenSet)[0] : null;
         }
+        persistTokens();
     }
 
     // 2. Polling API

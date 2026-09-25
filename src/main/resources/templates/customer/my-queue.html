@@ -67,7 +67,7 @@
                                     <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-light rounded-pill border">
                                         <i class="bi bi-shop text-primary"></i>
                                         <span class="fw-bold text-dark" th:text="${ticket.shopName}">Shop Name</span>
-                                        <span class="badge bg-primary bg-opacity-10 text-primary small" th:text="${ticket.shopCategory != null ? ticket.shopCategory.displayName : 'Business'}">Category</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary small" th:text="${ticket.shopCategory != null ? ticket.shopCategory : 'Business'}">Category</span>
                                     </div>
                                     <div th:if="${ticket.shopAddress != null and !ticket.shopAddress.isEmpty()}" class="text-muted small mt-1">
                                         <i class="bi bi-geo-alt"></i> <span th:text="${ticket.shopAddress}">Address</span>
