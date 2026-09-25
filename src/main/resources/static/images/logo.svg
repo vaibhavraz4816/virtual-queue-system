@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <defs>
+    <linearGradient id="qg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon Mark -->
+  <g transform="translate(10, 8)">
+    <rect width="44" height="44" rx="12" fill="url(#qg)" />
+    <!-- Stylized Q with Queue Lines -->
+    <circle cx="22" cy="21" r="11" fill="none" stroke="#ffffff" stroke-width="3.5" />
+    <path d="M29 28 L35 34" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" />
+    <circle cx="22" cy="21" r="3.5" fill="#38bdf8" />
+  </g>
+  <!-- Wordmark -->
+  <text x="64" y="38" font-family="'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif" font-size="28" font-weight="800" fill="#1e1b4b" letter-spacing="-0.5">Queue<tspan fill="#4f46e5">Ease</tspan></text>
+</svg>

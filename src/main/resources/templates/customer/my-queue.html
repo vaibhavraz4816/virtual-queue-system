@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Queue – QueueEase</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<!-- Navbar -->
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<!-- QR Scanner Modal Fragment -->
+<div th:replace="~{fragments/scanner-modal :: scannerModal}"></div>
+
+<!-- Raw server tokens for JS sync -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    window.INITIAL_MY_TOKENS = /*[[${initialTokensJson}]]*/ '[]';
+    /*]]>*/
+</script>
+
+<main class="py-4 py-md-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+
+                <!-- Page Header -->
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <span class="text-uppercase text-primary small fw-bold letter-spacing-1">Live Status</span>
+                        <h2 class="fw-bold mb-0">My Queue</h2>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" data-action="open-scanner">
+                            <i class="bi bi-qr-code-scan me-1"></i> Scan QR
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Multi-queue Switcher (hidden when only 1 queue) -->
+                <div id="multi-queue-tabs" class="d-none mb-3">
+                    <div class="d-flex gap-2 overflow-auto pb-2" id="queue-tab-list">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Active Tickets Container (Rendered dynamically or via initial server model) -->
+                <div id="my-queue-container">
+                    <div th:if="${activeTickets != null and !activeTickets.isEmpty()}" id="ssr-tickets">
+                        <div th:each="ticket, iterStat : ${activeTickets}" 
+                             class="ticket-view-wrapper" 
+                             th:id="'ticket-card-' + ${ticket.guestAccessToken}"
+                             th:classappend="${iterStat.index > 0 ? 'd-none' : ''}">
+                            
+                            <!-- Ticket Card -->
+                            <div class="card card-custom my-queue-card p-4 p-md-5 text-center mb-4"
+                                 th:classappend="${ticket.status == 'CALLED' ? 'state-called-active' : (ticket.status == 'SERVING' ? 'state-serving-active' : '')}">
+                                
+                                <!-- Shop Metadata Header -->
+                                <div class="mb-3">
+                                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-light rounded-pill border">
+                                        <i class="bi bi-shop text-primary"></i>
+                                        <span class="fw-bold text-dark" th:text="${ticket.shopName}">Shop Name</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary small" th:text="${ticket.shopCategory != null ? ticket.shopCategory.displayName : 'Business'}">Category</span>
+                                    </div>
+                                    <div th:if="${ticket.shopAddress != null and !ticket.shopAddress.isEmpty()}" class="text-muted small mt-1">
+                                        <i class="bi bi-geo-alt"></i> <span th:text="${ticket.shopAddress}">Address</span>
+                                    </div>
+                                </div>
+
+                                <!-- Paused Alert -->
+                                <div th:if="${ticket.shopStatus == 'QUEUE_PAUSED'}" class="alert alert-warning py-2 small mb-3">
+                                    <i class="bi bi-pause-circle-fill me-1"></i> <strong>QUEUE PAUSED:</strong> Your position is preserved. The counter will resume shortly.
+                                </div>
+
+                                <!-- CALLED Alert Box -->
+                                <div class="p-3 bg-warning bg-opacity-15 rounded-4 border border-warning my-3 text-start called-alert-box"
+                                     th:classappend="${ticket.status == 'CALLED' ? '' : 'd-none'}">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <div class="stat-widget-icon bg-warning text-dark flex-shrink-0" style="width: 38px; height: 38px;">
+                                            <i class="bi bi-bell-fill fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0 fw-bold text-dark">🔔 IT'S YOUR TURN!</h5>
+                                            <span class="small text-muted">Token <strong class="text-dark" th:text="${ticket.token}">A27</strong></span>
+                                        </div>
+                                    </div>
+                                    <p class="small text-secondary mb-3">
+                                        Please head to the counter immediately. Time remaining: <strong class="text-danger fs-6 called-countdown" th:attr="data-expires=${ticket.callExpiresAt}">02:00</strong>
+                                    </p>
+                                    <button type="button" class="btn btn-warning w-100 fw-bold py-2 shadow-sm text-dark btn-confirm-arrival" th:attr="data-token=${ticket.guestAccessToken}">
+                                        <i class="bi bi-hand-thumbs-up-fill me-1"></i> I'M HERE
+                                    </button>
+                                </div>
+
+                                <!-- Human Status Banner -->
+                                <div class="mb-2">
+                                    <span class="badge status-pill"
+                                          th:classappend="${ticket.status == 'WAITING' ? 'badge-waiting' : (ticket.status == 'CALLED' ? 'badge-called' : (ticket.status == 'SERVING' ? 'badge-serving' : 'badge-served'))}"
+                                          th:text="${ticket.humanStatusMessage}">
+                                        You're in the queue
+                                    </span>
+                                </div>
+
+                                <span class="text-muted small text-uppercase fw-bold letter-spacing-1 d-block mt-2">YOUR TOKEN</span>
+                                
+                                <!-- Large Token Display -->
+                                <div class="token-badge-large my-2 token-num-display" th:text="${ticket.token}">
+                                    A27
+                                </div>
+
+                                <!-- Live Metrics Grid -->
+                                <div class="row g-2 border-top border-bottom py-3 my-3">
+                                    <div class="col-4">
+                                        <span class="text-muted small d-block">Position</span>
+                                        <span class="fw-bold fs-3 text-dark position-val" th:text="${ticket.position > 0 ? '#' + ticket.position : '--'}">#4</span>
+                                    </div>
+                                    <div class="col-4 border-start border-end">
+                                        <span class="text-muted small d-block">People Ahead</span>
+                                        <span class="fw-bold fs-3 text-dark people-ahead-val" th:text="${ticket.peopleAhead}">3</span>
+                                    </div>
+                                    <div class="col-4">
+                                        <span class="text-muted small d-block">Est. Wait</span>
+                                        <span class="fw-bold fs-3 text-primary est-wait-val" th:text="${ticket.estimatedWait + ' min'}">24 min</span>
+                                    </div>
+                                </div>
+
+                                <!-- Wait Disclaimer -->
+                                <p class="text-muted small mb-3" style="font-size: 0.8rem;">
+                                    <i class="bi bi-info-circle me-1"></i> Approximate — actual wait may vary.
+                                </p>
+
+                                <!-- Currently Serving & Joined Info -->
+                                <div class="d-flex align-items-center justify-content-between text-muted small px-1 pt-2 border-top">
+                                    <span>Now Serving: <strong class="text-dark fs-6 serving-val" th:text="${ticket.currentServing != null ? ticket.currentServing : 'None'}">A23</strong></span>
+                                    <span th:if="${ticket.joinedTimeFormatted != null}">Joined: <span th:text="${ticket.joinedTimeFormatted}">10:42 AM</span></span>
+                                </div>
+                            </div>
+
+                            <!-- Footer Actions -->
+                            <div class="d-flex justify-content-between align-items-center px-2">
+                                <a th:if="${ticket.shopSlug != null}" th:href="@{/shop/{slug}/queue(slug=${ticket.shopSlug})}" class="text-decoration-none small text-muted">
+                                    <i class="bi bi-arrow-left me-1"></i> View Shop Profile
+                                </a>
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 ms-auto btn-leave-queue" th:attr="data-token=${ticket.guestAccessToken}">
+                                    <i class="bi bi-box-arrow-left me-1"></i> Leave Queue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State (Shown when no active tickets exist) -->
+                <div id="empty-state-card" class="card card-custom p-5 text-center" 
+                     th:classappend="${activeTickets != null and !activeTickets.isEmpty() ? 'd-none' : ''}">
+                    <div class="stat-widget-icon bg-primary bg-opacity-10 text-primary mx-auto mb-3" style="width: 72px; height: 72px; font-size: 2.2rem; border-radius: 1.25rem;">
+                        <i class="bi bi-ticket-perforated"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2">You don't have an active queue</h4>
+                    <p class="text-secondary small mb-4 col-md-10 mx-auto">
+                        Scan a shop's QR code or enter a queue link to join and track your place in real time without standing in line.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <button type="button" class="btn btn-primary-custom px-4 py-2" data-action="open-scanner">
+                            <i class="bi bi-qr-code-scan me-2"></i> Scan QR Code
+                        </button>
+                        <a th:href="@{/}" class="btn btn-outline-secondary px-4 py-2">
+                            Back to Home
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Leave Queue Confirmation Modal -->
+<div class="modal fade" id="leaveQueueModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow" style="border-radius: 1rem;">
+            <div class="modal-body p-4 text-center">
+                <div class="stat-widget-icon bg-danger bg-opacity-10 text-danger mx-auto mb-3">
+                    <i class="bi bi-exclamation-circle-fill fs-4"></i>
+                </div>
+                <h5 class="fw-bold">Leave this Queue?</h5>
+                <p class="text-muted small mb-4">You will lose your position and token. This action cannot be undone.</p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light w-50" data-bs-dismiss="modal">Keep Place</button>
+                    <button type="button" class="btn btn-danger w-50" id="confirm-leave-btn">Yes, Leave</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<!-- Bootstrap 5 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Audio Synthesis & Notifications -->
+<script th:src="@{/js/notification-sound.js}"></script>
+<!-- Camera QR Scanner -->
+<script th:src="@{/js/qr-scanner.js}"></script>
+<!-- Customer My Queue Polling Engine -->
+<script th:src="@{/js/customer-my-queue.js}"></script>
+</body>
+</html>

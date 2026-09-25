@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head></head>
+<body>
+<div th:fragment="sidebar(activeTab)" class="sidebar">
+    <div class="sidebar-brand d-flex align-items-center justify-content-between">
+        <span class="text-truncate" th:text="${shop != null ? shop.name : 'Shop Portal'}">Shop Portal</span>
+        <span class="badge" 
+              th:classappend="${shop != null && shop.status.name() == 'OPEN' ? 'bg-success' : (shop != null && shop.status.name() == 'QUEUE_PAUSED' ? 'bg-warning text-dark' : 'bg-danger')}"
+              th:text="${shop != null ? shop.status.displayName : 'Offline'}">
+            Open
+        </span>
+    </div>
+
+    <nav class="nav flex-column flex-grow-1">
+        <a class="nav-link-custom" th:classappend="${activeTab == 'dashboard' ? 'active' : ''}" th:href="@{/owner/dashboard}">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+        </a>
+        <a class="nav-link-custom" th:classappend="${activeTab == 'queue' ? 'active' : ''}" th:href="@{/owner/queue}">
+            <i class="bi bi-people-fill"></i>
+            <span>Live Queue</span>
+        </a>
+        <a class="nav-link-custom" th:classappend="${activeTab == 'qr' ? 'active' : ''}" th:href="@{/owner/qr}">
+            <i class="bi bi-qr-code"></i>
+            <span>Storefront QR</span>
+        </a>
+        <a class="nav-link-custom" th:classappend="${activeTab == 'profile' ? 'active' : ''}" th:href="@{/owner/profile}">
+            <i class="bi bi-gear-fill"></i>
+            <span>Shop Settings</span>
+        </a>
+        <a class="nav-link-custom" th:classappend="${activeTab == 'history' ? 'active' : ''}" th:href="@{/owner/history}">
+            <i class="bi bi-clock-history"></i>
+            <span>Queue History</span>
+        </a>
+        <a class="nav-link-custom" th:classappend="${activeTab == 'statistics' ? 'active' : ''}" th:href="@{/owner/statistics}">
+            <i class="bi bi-bar-chart-fill"></i>
+            <span>Statistics</span>
+        </a>
+    </nav>
+
+    <div class="pt-3 border-top mt-auto">
+        <a th:href="@{/shop/{slug}/queue(slug=${shop.slug})}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mb-2">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Public QR Page
+        </a>
+        <form th:action="@{/auth/logout}" method="post">
+            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

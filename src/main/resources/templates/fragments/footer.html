@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head></head>
+<body>
+<footer th:fragment="footer" class="mt-auto bg-white border-top">
+    <div class="container py-4">
+        <div class="row align-items-center gy-3">
+            <div class="col-md-6 text-center text-md-start">
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-2">
+                    <img th:src="@{/images/logo.svg}" alt="QueueEase" height="28">
+                </div>
+                <p class="mb-0 text-muted small">
+                    A modern, frictionless digital queue management service for local walk-in businesses.
+                </p>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <div class="d-flex flex-wrap justify-content-center justify-content-md-end gap-3 small mb-2">
+                    <a th:href="@{/}" class="text-secondary text-decoration-none">Home</a>
+                    <a th:href="@{/my-queue}" class="text-secondary text-decoration-none">My Queue</a>
+                    <a th:href="@{/#how-it-works}" class="text-secondary text-decoration-none">How It Works</a>
+                    <a th:href="@{/#for-businesses}" class="text-secondary text-decoration-none">For Businesses</a>
+                    <a th:href="@{/auth/login}" class="text-secondary text-decoration-none">Owner Portal</a>
+                </div>
+                <p class="mb-0 text-muted small">
+                    &copy; <span th:text="${#temporals.year(#temporals.createNow())}">2026</span> QueueEase. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

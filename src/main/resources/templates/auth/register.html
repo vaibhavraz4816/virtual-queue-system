@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Shop – QueueEase</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<main class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card card-custom p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="stat-widget-icon bg-primary bg-opacity-10 text-primary mx-auto mb-3">
+                            <i class="bi bi-shop fs-4"></i>
+                        </div>
+                        <h3 class="fw-bold">Register Your Business</h3>
+                        <p class="text-muted small">Set up your digital queue in under 2 minutes. No hardware required.</p>
+                    </div>
+
+                    <!-- Server Error Message -->
+                    <div th:if="${errorMessage}" class="alert alert-danger py-2 small" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        <span th:text="${errorMessage}">Error</span>
+                    </div>
+
+                    <form th:action="@{/auth/register}" th:object="${registerRequest}" method="post">
+                        <!-- Owner Info Section -->
+                        <h6 class="text-uppercase text-muted fw-bold small border-bottom pb-2 mb-3">1. Owner Account</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label small fw-semibold">Your Full Name *</label>
+                                <input type="text" class="form-control" th:field="*{name}" id="name" placeholder="John Doe" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label small fw-semibold">Email Address *</label>
+                                <input type="email" class="form-control" th:field="*{email}" id="email" placeholder="john@example.com" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label for="password" class="form-label small fw-semibold">Password * (min 6 characters)</label>
+                                <input type="password" class="form-control" th:field="*{password}" id="password" placeholder="••••••••" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Shop Profile Section -->
+                        <h6 class="text-uppercase text-muted fw-bold small border-bottom pb-2 mb-3">2. Shop Profile</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-7">
+                                <label for="shopName" class="form-label small fw-semibold">Business / Shop Name *</label>
+                                <input type="text" class="form-control" th:field="*{shopName}" id="shopName" placeholder="e.g. City Barber Shop" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('shopName')}" th:errors="*{shopName}"></div>
+                            </div>
+                            <div class="col-md-5">
+                                <label for="category" class="form-label small fw-semibold">Business Category *</label>
+                                <select class="form-select" th:field="*{category}" id="category" required>
+                                    <option th:each="cat : ${T(com.queueease.entity.enums.ShopCategory).values()}"
+                                            th:value="${cat}"
+                                            th:text="${cat.displayName}">Salon</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="averageServiceMinutes" class="form-label small fw-semibold">Avg Service Duration (mins) *</label>
+                                <input type="number" class="form-control" th:field="*{averageServiceMinutes}" id="averageServiceMinutes" min="1" max="180" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('averageServiceMinutes')}" th:errors="*{averageServiceMinutes}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="shopPhone" class="form-label small fw-semibold">Shop Contact Phone</label>
+                                <input type="text" class="form-control" th:field="*{shopPhone}" id="shopPhone" placeholder="+1 555-0100">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="shopAddress" class="form-label small fw-semibold">Address / Location</label>
+                                <input type="text" class="form-control" th:field="*{shopAddress}" id="shopAddress" placeholder="e.g. 100 Main St, Suite 4">
+                            </div>
+                            <div class="col-12">
+                                <label for="shopDescription" class="form-label small fw-semibold">Short Business Description</label>
+                                <textarea class="form-control" th:field="*{shopDescription}" id="shopDescription" rows="2" placeholder="e.g. Walk-in haircutting, styling and beard trims."></textarea>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 py-2 fw-semibold">
+                            <i class="bi bi-check-circle-fill me-1"></i> Complete Registration & Create Shop
+                        </button>
+                    </form>
+
+                    <div class="mt-4 text-center">
+                        <span class="small text-muted">Already have a shop account? </span>
+                        <a th:href="@{/auth/login}" class="small text-primary fw-semibold text-decoration-none">Sign in here</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

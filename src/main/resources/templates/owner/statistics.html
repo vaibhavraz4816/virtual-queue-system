@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Statistics – QueueEase</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+    <link th:href="@{/css/dashboard.css}" rel="stylesheet">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="dashboard-wrapper">
+    <div th:replace="~{fragments/sidebar :: sidebar('statistics')}"></div>
+
+    <main class="dashboard-content">
+        <div class="container-fluid">
+            <div class="mb-4">
+                <h3 class="fw-bold mb-1">Queue Performance & Analytics</h3>
+                <p class="text-muted small mb-0">Overview of operational metrics, customer throughput, and service performance for today.</p>
+            </div>
+
+            <!-- Metrics Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-widget">
+                        <div class="stat-widget-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div>
+                            <span class="stat-label">Total Today</span>
+                            <div class="stat-value text-dark" th:text="${stats.totalToday}">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-widget">
+                        <div class="stat-widget-icon bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div>
+                            <span class="stat-label">Served Customers</span>
+                            <div class="stat-value text-success" th:text="${stats.servedToday}">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-widget">
+                        <div class="stat-widget-icon bg-danger bg-opacity-10 text-danger">
+                            <i class="bi bi-skip-forward-circle-fill"></i>
+                        </div>
+                        <div>
+                            <span class="stat-label">Skipped / No-Shows</span>
+                            <div class="stat-value text-danger" th:text="${stats.skippedToday}">0</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-widget">
+                        <div class="stat-widget-icon bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <div>
+                            <span class="stat-label">Configured Avg Service</span>
+                            <div class="stat-value text-info" th:text="${shop.averageServiceMinutes + ' min'}">10 min</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Breakdown -->
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card card-custom p-4 h-100">
+                        <h5 class="fw-bold mb-3">Service Completion Rate</h5>
+                        <p class="text-muted small mb-4">Percentage of total registered tickets successfully served today.</p>
+                        
+                        <div class="text-center py-4">
+                            <div class="display-3 fw-extrabold text-primary mb-2">
+                                <span th:text="${stats.totalToday > 0 ? (stats.servedToday * 100 / stats.totalToday) + '%' : '100%'}">85%</span>
+                            </div>
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fw-semibold">
+                                <i class="bi bi-arrow-up-right me-1"></i> Healthy Throughput
+                            </span>
+                        </div>
+
+                        <div class="p-3 bg-light rounded-3 border mt-auto">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Served: <strong class="text-dark" th:text="${stats.servedToday}">0</strong></span>
+                                <span>Skipped: <strong class="text-dark" th:text="${stats.skippedToday}">0</strong></span>
+                                <span>Waiting: <strong class="text-dark" th:text="${stats.customersWaiting}">0</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card card-custom p-4 h-100">
+                        <h5 class="fw-bold mb-3">2-Minute No-Show Rule Efficiency</h5>
+                        <p class="text-muted small mb-4">
+                            The system automatically transitions unresponsive called customers to <code>SKIPPED</code> after the 120-second grace period.
+                        </p>
+
+                        <ul class="list-group list-group-flush mb-4">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary"><i class="bi bi-clock me-2 text-primary"></i> Grace Period Duration</span>
+                                <span class="fw-bold text-dark">120 seconds (2 mins)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary"><i class="bi bi-cpu me-2 text-primary"></i> Scheduled Checker Task</span>
+                                <span class="badge bg-light text-success border">Active (every 5s)</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span class="text-secondary"><i class="bi bi-shield-check me-2 text-primary"></i> Counter Lock Protection</span>
+                                <span class="badge bg-light text-primary border">Enforced (Transaction-safe)</span>
+                            </li>
+                        </ul>
+
+                        <div class="alert alert-info py-2 small mb-0">
+                            <i class="bi bi-lightbulb-fill me-1"></i> Tip: If walk-ins take longer to reach the counter, you can adjust the service duration in <a th:href="@{/owner/profile}" class="alert-link">Shop Settings</a>.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
